@@ -1,0 +1,500 @@
+import json
+import os
+
+DATA_DIR = r"C:\Users\naman\.gemini\antigravity\scratch\CampusAI\data"
+
+# Detailed chunk dictionary for RAG retrieval with precise chunk IDs and metadata
+rag_chunks = [
+    {
+        "id": "INST-001-C01",
+        "category": "institution",
+        "title": "Institution identity and address",
+        "content": "ABES Engineering College (ABESEC), 19th KM Stone, NH-09, Ghaziabad, Uttar Pradesh 201009.",
+        "source_url": "https://www.abes.ac.in/index.html",
+        "academic_year": "2026-27",
+        "keywords": ["identity", "address", "location", "NH-09", "Ghaziabad"]
+    },
+    {
+        "id": "INST-001-C03",
+        "category": "institution",
+        "title": "Main phone and general email",
+        "content": "Main phone: 0120-7135112. General email: info@abes.ac.in.",
+        "source_url": "https://www.abes.ac.in/index.html",
+        "academic_year": "2026-27",
+        "keywords": ["phone", "email", "contact", "0120-7135112", "info@abes.ac.in"]
+    },
+    {
+        "id": "INST-001-C05",
+        "category": "institution",
+        "title": "Establishment and Autonomous Status",
+        "content": "Established in 2000. The college states it has been autonomous since 2025.",
+        "source_url": "https://www.abes.ac.in/index.html",
+        "academic_year": "2026-27",
+        "keywords": ["established 2000", "autonomous 2025", "autonomy"]
+    },
+    {
+        "id": "INST-002-C01",
+        "category": "institution",
+        "title": "Current at-a-glance figures",
+        "content": "The 2026 website homepage reports: 8,090 students on campus; 24,000+ alumni worldwide; 54 startups incubated; 60 LPA highest placement package in 2025; 1,692 placement offers in 2025; 15.77-acre campus; 500+ recruiters; 2,690+ Scopus publications; 375+ published patents; 9 granted patents; ₹15 lakh consultancy received in 2024-25; ₹107.5 lakh sponsored research in 2024-25.",
+        "source_url": "https://www.abes.ac.in/index.html",
+        "academic_year": "2026",
+        "keywords": ["8090 students", "24000 alumni", "54 startups", "15.77 acres", "patents", "consultancy", "sponsored research"]
+    },
+    {
+        "id": "ACAD-001-C01",
+        "category": "programs",
+        "title": "B.Tech Programs and approved intake 2026",
+        "content": "B.Tech approved intake: CSE 900; CSE (AI & ML) 360; CSE (Data Science) 180; Electronics & Communication Engineering 180; Electrical & Computer Engineering 120; Mechanical Engineering 60; CSE Working Professional 30; ECE Working Professional 30.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["B.Tech intake", "CSE 900", "AIML 360", "Data Science 180", "ECE 180", "ELCE 120", "Mechanical 60"]
+    },
+    {
+        "id": "ACAD-001-C05",
+        "category": "programs",
+        "title": "BCA, MCA and M.Tech Approved Intake 2026",
+        "content": "BCA approved intake is 120 seats. MCA approved intake is 180 seats. M.Tech CSE approved intake is 12 seats. M.Tech ECE approved intake is 6 seats.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["BCA 120", "MCA 180", "M.Tech CSE 12", "M.Tech ECE 6"]
+    },
+    {
+        "id": "ADM-001-C01",
+        "category": "admissions",
+        "title": "B.Tech admission route quota",
+        "content": "For 2026-27, the official admissions page states that 85% of approved seats are filled through counselling based on JEE-2026 and AICTE/AKTU eligibility; 15% are offered through direct admission under AICTE/AKTU and college policy.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["85% counselling", "15% direct admission", "JEE 2026", "AKTU eligibility"]
+    },
+    {
+        "id": "ADM-001-C02",
+        "category": "admissions",
+        "title": "Direct admission selection process",
+        "content": "Direct admission includes online application, shortlisting using qualifying aggregate and JEE score/rank, interview, and selection based on test/interview performance.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["direct admission process", "qualifying aggregate", "interview", "shortlisting"]
+    },
+    {
+        "id": "ADM-002-C01",
+        "category": "admissions",
+        "title": "2026 Entrance examinations referenced",
+        "content": "The admissions page references JEE (Main) 2026 for engineering, CUET (UG)-2026 for B.Tech lateral entry/BCA, and CUET (PG)-2026 for MCA.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["JEE Main 2026", "CUET UG 2026", "CUET PG 2026", "lateral entry", "entrance exam"]
+    },
+    {
+        "id": "HOST-001-C01",
+        "category": "hostel",
+        "title": "Boys hostel fee structure 2026-27",
+        "content": "For 2026-27, boys' hostel totals including refundable security are listed as ₹136,500 (4-seater non-AC), ₹148,000 (4-seater AC), ₹143,000 (triple non-AC), ₹164,000 (triple AC), ₹154,500 (double non-AC), and ₹177,500 (double AC).",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["boys hostel fee", "4-seater non-AC ₹136500", "4-seater AC ₹148000", "triple non-AC ₹143000", "triple AC ₹164000", "double non-AC ₹154500", "double AC ₹177500"]
+    },
+    {
+        "id": "HOST-001-C02",
+        "category": "hostel",
+        "title": "Girls hostel fee structure 2026-27",
+        "content": "Girls' AC hostel totals including refundable security are ₹148,000 (4-seater AC), ₹164,000 (triple AC), and ₹177,500 (double AC).",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["girls hostel fee", "4-seater AC ₹148000", "triple AC ₹164000", "double AC ₹177500"]
+    },
+    {
+        "id": "HOST-002-C01",
+        "category": "hostel",
+        "title": "Hostel room allotment rule",
+        "content": "Room allotment is strictly on a first-come, first-served basis.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["first come first served", "room allotment"]
+    },
+    {
+        "id": "HOST-002-C02",
+        "category": "hostel",
+        "title": "Hostel AC room occupancy condition",
+        "content": "AC rooms are allotted only upon full occupancy of the designated room.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["AC full occupancy", "allotment condition"]
+    },
+    {
+        "id": "HOST-002-C03",
+        "category": "hostel",
+        "title": "Hostel AC operational timings",
+        "content": "AC usage is operational from 5:00 PM to 8:00 AM on working days, and round-the-clock on holidays, subject to UPPCL commercial power availability.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["AC timing", "5 PM to 8 AM", "holidays round the clock", "UPPCL power"]
+    },
+    {
+        "id": "HOST-002-C04",
+        "category": "hostel",
+        "title": "Hostel attached-bathroom surcharge",
+        "content": "Limited attached-bathroom rooms carry an additional ₹10,000 charge shared equally among roommates.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["attached bathroom", "₹10,000 extra", "shared equally"]
+    },
+    {
+        "id": "HOST-002-C05",
+        "category": "hostel",
+        "title": "Hostel desert cooler regulations",
+        "content": "Girls' hostel desert coolers are prohibited; boys' hostel cooler use is strictly subject to college policy.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["cooler prohibited", "girls hostel", "boys hostel cooler"]
+    },
+    {
+        "id": "V4-HOST-004-C02",
+        "category": "hostel",
+        "title": "Hostel laundry and refundable security deposit",
+        "content": "Hostel laundry charges are ₹3,500 for 500 clothes per year. Refundable hostel security deposit is ₹5,000 one time when opting for hostel accommodation.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["laundry ₹3500", "500 clothes", "refundable security ₹5000"]
+    },
+    {
+        "id": "V5-FEE-001-C01",
+        "category": "fees",
+        "title": "2026-27 Academic fee total",
+        "content": "The current ABES admissions page lists a 2026-27 academic fee total of ₹181,200 for the displayed main fee structure, including a refundable one-time security deposit of ₹5,000.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["academic fee ₹181,200", "total fee", "refundable deposit"]
+    },
+    {
+        "id": "V5-FEE-002-C01",
+        "category": "fees",
+        "title": "Tuition Fee component",
+        "content": "Tuition Fee is ₹110,000 in the displayed 2026-27 fee structure.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["tuition fee", "₹110,000"]
+    },
+    {
+        "id": "V5-FEE-003-C01",
+        "category": "fees",
+        "title": "Career Planning & Development Fee component",
+        "content": "Career Planning & Development Fee is ₹36,000 in the 2026-27 structure.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["career planning fee", "₹36,000"]
+    },
+    {
+        "id": "V5-FEE-004-C01",
+        "category": "fees",
+        "title": "Technology and Digital Learning Support",
+        "content": "Technology and Digital Learning Support fee is ₹6,000 in the 2026-27 structure.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["tech support fee", "₹6,000"]
+    },
+    {
+        "id": "V5-FEE-005-C01",
+        "category": "fees",
+        "title": "Examination Fees component",
+        "content": "Examination Fees are ₹9,600 in the 2026-27 structure.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["exam fees", "₹9,600"]
+    },
+    {
+        "id": "V5-FEE-006-C01",
+        "category": "fees",
+        "title": "Industry Engagement & Innovation Support",
+        "content": "Industry Engagement & Innovation Support fee is ₹6,000 in the 2026-27 structure.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["industry engagement", "₹6,000"]
+    },
+    {
+        "id": "V5-FEE-007-C01",
+        "category": "fees",
+        "title": "Student Learning Resource Access & Book Bank",
+        "content": "Student Learning Resource Access & Book Bank fee is ₹5,000.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["book bank", "learning resources", "₹5,000"]
+    },
+    {
+        "id": "V5-FEE-008-C01",
+        "category": "fees",
+        "title": "Admissions, Registration & Documentation fee",
+        "content": "Admissions, Registration & Documentation fee is ₹3,100.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["registration fee", "documentation", "₹3,100"]
+    },
+    {
+        "id": "V5-FEE-009-C01",
+        "category": "fees",
+        "title": "Student Welfare & Group Insurance",
+        "content": "Student Welfare & Group Insurance fee is ₹500.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["student welfare", "insurance", "₹500"]
+    },
+    {
+        "id": "V5-FEE-010-C01",
+        "category": "fees",
+        "title": "Security Deposit (Refundable - One-Time)",
+        "content": "Security Deposit (Refundable - One-Time) is ₹5,000.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["refundable security", "deposit", "₹5,000"]
+    },
+    {
+        "id": "FEE-001-C01",
+        "category": "fees",
+        "title": "Mandatory uniform charges",
+        "content": "For 2026-27, mandatory uniform charges are listed as ₹9,900. Includes trousers/pants, shirts, ties, scarf for girls, sweater, blazer, T-shirt and sweatshirt.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["uniform ₹9900", "blazer", "sweater", "trousers", "dress code"]
+    },
+    {
+        "id": "FEE-001-C02",
+        "category": "fees",
+        "title": "Academic fee payment restrictions",
+        "content": "Academic fees are strictly NOT accepted by cheque or cash. Official payment routes provided: online payment gateway, Jodo, bank draft, and RTGS/NEFT with verified bank details.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["no cash", "no cheque", "payment gateway", "Jodo", "RTGS", "NEFT"]
+    },
+    {
+        "id": "V5-FEE-012-C01",
+        "category": "fees",
+        "title": "Pre-enrollment registration charges",
+        "content": "Direct admission pre-enrollment registration charges: ₹1,000 for General/OBC of UP and all categories outside UP (if appeared in entrance exam); ₹500 for SC/ST of UP (if appeared); ₹2,300 for General/OBC of UP and outside UP (if not appeared); ₹1,150 for SC/ST of UP (if not appeared).",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["pre-enrollment charges", "₹1000", "₹500", "₹2300", "₹1150"]
+    },
+    {
+        "id": "V5-FEE-015-C01",
+        "category": "fees",
+        "title": "Academic and Hostel Refund Policy",
+        "content": "For newly admitted students in 2026-27, academic fee refund on cancellation follows UGC refund rules. For hostel withdrawal, security plus mess and laundry charges for unutilized months are refundable on a pro-rata basis.",
+        "source_url": "https://www.abes.ac.in/courses-offered.html",
+        "academic_year": "2026-27",
+        "keywords": ["UGC refund", "hostel withdrawal", "pro-rata", "security refund"]
+    },
+    {
+        "id": "PLACE-001-C01",
+        "category": "placements",
+        "title": "Placement statistics 2025-26",
+        "content": "The placement page lists 489 companies for campus placements, 1,289 placement offers, and a highest package of 45 LPA for the 2025-26 statistics block.",
+        "source_url": "https://www.abes.ac.in/placement.html",
+        "academic_year": "2025-26",
+        "keywords": ["placements 2025-26", "45 LPA", "489 companies", "1289 offers"]
+    },
+    {
+        "id": "PLACE-001-C02",
+        "category": "placements",
+        "title": "Homepage 2025 placement package distinction",
+        "content": "The homepage separately reports 60 LPA as the highest package in placements 2025 with 1,692 offers, so chatbot answers must preserve the source year/definition rather than merging the figures.",
+        "source_url": "https://www.abes.ac.in/placement.html",
+        "academic_year": "2025",
+        "keywords": ["60 LPA", "1692 offers", "2025 placement", "highest package"]
+    },
+    {
+        "id": "V5-PLACE-002-C01",
+        "category": "placements",
+        "title": "2026 Placement Highlight: Amit Kumar",
+        "content": "Amit Kumar from CSE (Data Science) received a 45 LPA offer from Clyromedia in 2026 as SDE-II.",
+        "source_url": "https://www.abes.ac.in/placement.html",
+        "academic_year": "2025-26",
+        "keywords": ["Amit Kumar", "45 LPA", "Clyromedia", "SDE-II", "Data Science"]
+    },
+    {
+        "id": "V5-PLACE-003-C01",
+        "category": "placements",
+        "title": "2026 Placement Highlight: Supriya Pandey",
+        "content": "Supriya Pandey from CSE received a 39 LPA offer from Texas Instruments in 2026 as SDE.",
+        "source_url": "https://www.abes.ac.in/placement.html",
+        "academic_year": "2025-26",
+        "keywords": ["Supriya Pandey", "39 LPA", "Texas Instruments", "SDE", "CSE"]
+    },
+    {
+        "id": "V5-PLACE-004-C01",
+        "category": "placements",
+        "title": "2026 Placement Highlight: Yashika",
+        "content": "Yashika from CS received a 24.48 LPA offer from Horizon X in 2026 as Trainee.",
+        "source_url": "https://www.abes.ac.in/placement.html",
+        "academic_year": "2025-26",
+        "keywords": ["Yashika", "24.48 LPA", "Horizon X", "Trainee", "CS"]
+    },
+    {
+        "id": "PLACE-002-C01",
+        "category": "placements",
+        "title": "Top Recruiters",
+        "content": "Recruiters include Microsoft, Adobe, Atlassian, Goldman Sachs, Google, TCS, Cognizant, Infosys, Accenture, Capgemini, DXC, and 500+ visiting companies.",
+        "source_url": "https://www.abes.ac.in/placement.html",
+        "academic_year": "2026-27",
+        "keywords": ["Google", "Microsoft", "Goldman Sachs", "Atlassian", "Adobe", "TCS", "Infosys"]
+    },
+    {
+        "id": "GRC-001-C01",
+        "category": "grievance",
+        "title": "Student Grievance procedure: Registration & HOD routing",
+        "content": "A grievance is registered through the online grievance portal and routed to the concerned HOD. The HOD is expected to acknowledge and provide a solution/decision report within 5 days.",
+        "source_url": "https://www.abes.ac.in/GRC-grievance-redressal-cell.html",
+        "academic_year": "2026-27",
+        "keywords": ["grievance portal", "HOD 5 days", "resolution"]
+    },
+    {
+        "id": "GRC-001-C03",
+        "category": "grievance",
+        "title": "GRC timeline and central appeal",
+        "content": "Final GRC approval is within 7 days. If a student is dissatisfied, an appeal to the central grievance committee can be submitted within 4 days after the HOD reply.",
+        "source_url": "https://www.abes.ac.in/GRC-grievance-redressal-cell.html",
+        "academic_year": "2026-27",
+        "keywords": ["7 days GRC approval", "4 days appeal", "central grievance committee"]
+    },
+    {
+        "id": "GRC-002-C01",
+        "category": "grievance",
+        "title": "Grievance escalation to University Ombudsperson",
+        "content": "If not satisfied with the Student Grievance Redressal Committee decision, an appeal may be made to the Ombudsperson appointed by affiliating university (Dr. A.P.J. Abdul Kalam Technical University, AKTU Lucknow). GRC reports are sent to the university within 15 days.",
+        "source_url": "https://www.abes.ac.in/GRC-grievance-redressal-cell.html",
+        "academic_year": "2026-27",
+        "keywords": ["AKTU Ombudsperson", "15 days", "grievance escalation"]
+    },
+    {
+        "id": "ADMIN-001-C01",
+        "category": "administration",
+        "title": "Leadership and Deans",
+        "content": "Chairman: Shri Neeraj Goel; General Secretary: Shri Shashwat Goel; Director: Prof. (Dr.) Devendra Kumar Sharma. Dean Academics & Trainings: Prof. (Dr.) Amit Sinha; Dean Student Welfare: Prof. (Dr.) Amita Tripathy; Dean Administration: Mr. Mohit Misra.",
+        "source_url": "https://www.abes.ac.in/important-functionaries.html",
+        "academic_year": "2026-27",
+        "keywords": ["Director", "Dean Academics", "Amit Sinha", "Amita Tripathy", "Mohit Misra"]
+    },
+    {
+        "id": "DEPT-031-C01",
+        "category": "administration",
+        "title": "Heads of Department (HODs)",
+        "content": "HOD CSE/CS: Prof. (Dr.) Pankaj Sharma; HOD ECE: Prof. (Dr.) Kimmi Verma; HOD CSE(AIML): Dr. Deepali Dev; HOD CSE(Data Science): Dr. Prabhat Singh; HOD Mechanical Engineering: Prof. (Dr.) Ravi Shankar Raman; HOD EN & ELCE: Dr. Pragati Shrivastava Deb; HOD MCA: Prof. (Dr.) Devendra Kumar; HOD IT/CE: Prof. (Dr.) Amrita Jyoti; HOD Applied Sciences & Humanities: Dr. Jaya Singh.",
+        "source_url": "https://www.abes.ac.in/important-functionaries.html",
+        "academic_year": "2026-27",
+        "keywords": ["HOD CSE", "HOD ECE", "HOD AIML", "HOD Data Science", "HOD Mechanical", "HOD MCA", "Pankaj Sharma", "Kimmi Verma"]
+    },
+    {
+        "id": "LIB-001-C01",
+        "category": "library",
+        "title": "Central Library facility and collection",
+        "content": "The library is a 1,565 sq.m resource centre with a 400 sq.m reading area, 250 seating capacity, over 115,210 books, 1,224 e-journals, and 8,074 e-books. Automated via KOHA with OPAC and remote e-resource login.",
+        "source_url": "https://www.abes.ac.in/library.html",
+        "academic_year": "2026-27",
+        "keywords": ["library", "KOHA", "115210 books", "1224 e-journals", "OPAC", "remote login"]
+    },
+    {
+        "id": "CAMP-001-C01",
+        "category": "campus",
+        "title": "Campus amenities",
+        "content": "15.77-acre campus with swimming pool, floodlit stadium, cricket ground, badminton/tennis/basketball courts, air-conditioned smart classrooms, medical room with ambulance, auditorium, open-air theatre, 5 seminar halls, 7 canteens/messes serving 2,000+ students, and temple.",
+        "source_url": "https://www.abes.ac.in/life-at-abes.html",
+        "academic_year": "2026-27",
+        "keywords": ["swimming pool", "floodlit stadium", "auditorium", "canteens", "medical room", "ambulance"]
+    },
+    {
+        "id": "WELL-001-C01",
+        "category": "student_support",
+        "title": "Medical and 'Your Dost' Mental Wellness Support",
+        "content": "Campus medical room with 24x7 ambulance and doctor. Psychological counselling is provided through confidential 'Your Dost' sessions for academic, emotional, personal, and career challenges.",
+        "source_url": "https://www.abes.ac.in/life-at-abes.html",
+        "academic_year": "2026-27",
+        "keywords": ["Your Dost", "counselling", "mental health", "medical room", "doctor", "ambulance"]
+    },
+    {
+        "id": "V4-CLUB-001-C01",
+        "category": "clubs",
+        "title": "Software Development Club (SDC)",
+        "content": "SDC focuses on coding, development projects, hackathons, and open source. Open to all B.Tech branches. Annual intake: 30 new members. Domains: Graphics, Social Media, PR & Outreach, Event Management, and Technical.",
+        "source_url": "https://www.abes.ac.in/SDC.html",
+        "academic_year": "2026-27",
+        "keywords": ["SDC", "Software Development Club", "coding", "hackathons", "30 intake"]
+    },
+    {
+        "id": "V4-CLUB-002-C01",
+        "category": "clubs",
+        "title": "Dataverse (DS & AI Club)",
+        "content": "Dataverse is the official Data Science & AI Club. Conducts Hackoverse, CodeBids, PowerDash, and Power BI visualization workshops. Recruitment is held annually in September after Datathon with an intake of 30 members.",
+        "source_url": "https://www.abes.ac.in/DataVerse.html",
+        "academic_year": "2026-27",
+        "keywords": ["Dataverse", "AI club", "Hackoverse", "CodeBids", "Datathon", "30 intake"]
+    },
+    {
+        "id": "V4-CLUB-003-C01",
+        "category": "clubs",
+        "title": "Minerva Literary Society",
+        "content": "Minerva is the official literary society, cultivating debating, anchoring, creative writing, poetry and soft skills. Highlighted flagship event: FORTIFY.",
+        "source_url": "https://www.abes.ac.in/minerva.html",
+        "academic_year": "2026-27",
+        "keywords": ["Minerva", "literary society", "debating", "FORTIFY"]
+    },
+    {
+        "id": "V4-CLUB-005-C01",
+        "category": "clubs",
+        "title": "Kalakrit Cultural Club",
+        "content": "Kalakrit is the cultural club covering dance, music, singing, and fashion. Flagship event: Manthan. Other popular events include Ground Zero and Roadies.",
+        "source_url": "https://www.abes.ac.in/kalakrit.html",
+        "academic_year": "2026-27",
+        "keywords": ["Kalakrit", "dance", "singing", "fashion", "Manthan", "Ground Zero"]
+    },
+    {
+        "id": "V4-CLUB-006-C01",
+        "category": "sports",
+        "title": "Sports Club & Tournaments",
+        "content": "Sports Club organizes Utsaaha (annual sports meet across track, field, soccer, basketball, volleyball) and APL (ABES Premier League cricket tournament), plus football, tennis, and swimming.",
+        "source_url": "https://www.abes.ac.in/sports.html",
+        "academic_year": "2026-27",
+        "keywords": ["Utsaaha", "APL", "cricket", "sports meet", "swimming", "basketball"]
+    },
+    {
+        "id": "V4-CLUB-008-C01",
+        "category": "clubs",
+        "title": "Samvaad Theatre Group",
+        "content": "Samvaad is the student theatre group. Organizes Playhouse 26-day theatre workshop and holds an active MoU with Treasure Art Association to train aspiring student actors.",
+        "source_url": "https://www.abes.ac.in/samvaad.html",
+        "academic_year": "2026-27",
+        "keywords": ["Samvaad", "theatre", "Playhouse", "Treasure Art"]
+    },
+    {
+        "id": "PROG-004-C01",
+        "category": "programs",
+        "title": "MBA Program Status and Official Policy",
+        "content": "ABES confirms MBA as an academic offering with an active ERP Online Enquiry portal (https://erp.abes.ac.in/onlineEnquiryMBA/). The current public course-seat table does not publish the exact intake count in the main table. Therefore, Campus-AI confirms program availability but directs students to the ERP portal for live verified intake and fee details.",
+        "source_url": "https://erp.abes.ac.in/onlineEnquiryMBA/",
+        "academic_year": "2026-27",
+        "keywords": ["MBA", "ERP enquiry", "intake policy", "live verification"]
+    },
+    {
+        "id": "PRIV-001-C01",
+        "category": "privacy",
+        "title": "Student Privacy & Credential Security Shield",
+        "content": "Campus-AI strictly protects student privacy: student passwords, OTPs, roll numbers, and personal phone numbers are never requested, collected, or echoed. Portal authentication must be completed on official college portals directly.",
+        "source_url": "https://www.abes.ac.in/GRC-grievance-redressal-cell.html",
+        "academic_year": "2026-27",
+        "keywords": ["privacy", "no passwords", "no OTPs", "PII shield"]
+    },
+    {
+        "id": "DATA-001-C01",
+        "category": "data_quality",
+        "title": "Year-Specific Data Integrity Rule",
+        "content": "Campus-AI preserves strict academic year fidelity. Placement 2025 (60 LPA, 1,692 offers) is never merged with 2025-26 (45 LPA, 1,289 offers). 2026-27 approved course intake table supersedes historical department pages.",
+        "source_url": "https://www.abes.ac.in/",
+        "academic_year": "2026-27",
+        "keywords": ["data integrity", "year fidelity", "no merging", "verified"]
+    }
+]
+
+out_file = os.path.join(DATA_DIR, "rag_chunks.json")
+with open(out_file, "w", encoding="utf-8") as f:
+    json.dump(rag_chunks, f, indent=2, ensure_ascii=False)
+
+print(f"Generated {len(rag_chunks)} RAG chunks in {out_file}")
