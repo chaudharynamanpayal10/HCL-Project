@@ -176,6 +176,11 @@ Output:
 
 ## 🔒 Privacy & Compliance
 Campus-AI complies with the **ABES Student Privacy Protocol v5.0**. It operates strictly with public institutional knowledge. Private authentication credentials (ERP passwords, SMS OTPs, University roll numbers) are guarded by client- and server-side interceptors that redirect users to authenticated HTTPS portal endpoints.
+
 ## Project Screenshot
 <img width="1912" height="1031" alt="image" src="https://github.com/user-attachments/assets/b28f2056-757a-4e96-8a95-0389a4b6e990" />
+
+## Live project link 🎉
+
+https://campus-ai-iiu9.onrender.com
 
